@@ -1,15 +1,20 @@
 use strict;
 use warnings;
 use File::Find;
+use File::Basename;
 
 # Specify the directory to search
-my $directory = 'C:\Users';
+my $directory = 'DIRECTORY';
 
 # Regular expression pattern to match email addresses
 my $email_pattern = qr/\b([a-z0-9._%+-]{2,}@[a-z.-]+\.[a-z]{2,})\b/;
 
 # Domains to exclude
-my @excluded_domains = ('microsoft.com', '2x.png', '3x.png', '4x.png', 'openssl.org', 'example.com', 'c.us');
+my @excluded_domains = ('microsoft.com', '2x.png', '3x.png', '4x.png', 'openssl.org', 'example.com', 'c.us', 's.whatsapp.net');
+
+# File names and extensions to ignore
+my @ignored_files = ('README', 'LICENSE', 'CHANGES');
+my @ignored_extensions = ('188', 'md');
 
 # Hash to store encountered email addresses
 my %seen_emails;
@@ -20,6 +25,11 @@ sub process_file {
 
     # Skip directories
     return if -d $file;
+
+    # Check file name and extension
+    my ($name, $path, $ext) = fileparse($file, qr/\.[^.]*/);
+    return if grep { $_ eq $name } @ignored_files;
+    return if grep { $_ eq $ext } @ignored_extensions;
 
     # Try to open the file and search for email addresses
     open(my $fh, '<:raw', $file) or do {
@@ -45,11 +55,8 @@ sub process_file {
             print "File: $file\n";
             print "Emails found:\n";
             print "- $match\n";
-			
-
+            print "\n";
         }
-        print "\n" if $found;
-
     }
 
     close $fh;
@@ -71,5 +78,7 @@ if ($@) {
     warn "Error occurred during file search: $@";
 }
 
-# Execute the program
-process_file($directory);
+# Write unique emails to the 'emails.txt' file
+open(my $email_file, '>', 'emails.txt') or die "Unable to open 'emails.txt' file: $!";
+print $email_file join("\n", keys %seen_emails);
+close $email_file;
